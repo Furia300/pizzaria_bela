@@ -1,0 +1,14 @@
+{
+  "name": "instalivre-pizza-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "setup:backend": "cd backend && npm install && npx prisma db push && npm run prisma:seed",
+    "setup:frontend": "cd frontend && npm install",
+    "setup": "npm run setup:backend && npm run setup:frontend",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "test:backend": "cd backend && npm test",
+    "test": "npm run test:backend"
+  }
+}

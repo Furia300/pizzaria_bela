@@ -1,0 +1,187 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String             @id @default(uuid())
+  name         String
+  email        String             @unique
+  passwordHash String
+  role         String             @default("CLIENT") // CLIENT, KITCHEN, COURIER, ADMIN
+  phone        String?
+  points       Int                @default(0)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  addresses    Address[]
+  orders       Order[]            @relation("ClientOrders")
+  deliveries   Order[]            @relation("CourierDeliveries")
+  reviews      Review[]
+  tracking     DeliveryTracking[]
+}
+
+model Address {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  street       String
+  number       String
+  complement   String?
+  neighborhood String
+  city         String
+  state        String   @default("SP")
+  zipCode      String
+  lat          Float?
+  lng          Float?
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  icon        String?
+  sortOrder   Int       @default(0)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+}
+
+model Product {
+  id             String           @id @default(uuid())
+  categoryId     String
+  category       Category         @relation(fields: [categoryId], references: [id])
+  name           String
+  slug           String           @unique
+  description    String
+  basePrice      Float
+  image          String
+  isCustomizable Boolean          @default(true)
+  isVegetarian   Boolean          @default(false)
+  isSpicy        Boolean          @default(false)
+  isChefSpecial  Boolean          @default(false)
+  isAvailable    Boolean          @default(true)
+  ingredients    String? // Comma-separated list or JSON
+  variants       ProductVariant[]
+  orderItems     OrderItem[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model ProductVariant {
+  id              String      @id @default(uuid())
+  productId       String
+  product         Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name            String // P (Individual), M (Média), G (Grande), Família
+  sizeSlices      Int         @default(8)
+  priceMultiplier Float       @default(1.0)
+  isDefault       Boolean     @default(false)
+  orderItems      OrderItem[]
+}
+
+model Ingredient {
+  id          String   @id @default(uuid())
+  name        String
+  category    String // BASE, SAUCE, CHEESE, PROTEIN, VEGGIE, FINISH, CRUST
+  price       Float    @default(0.0)
+  image       String?
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Order {
+  id              String               @id @default(uuid())
+  orderNumber     Int                  @unique
+  userId          String?
+  user            User?                @relation("ClientOrders", fields: [userId], references: [id])
+  guestName       String?
+  guestPhone      String?
+  guestEmail      String?
+  status          String               @default("RECEIVED") // RECEIVED, PREPARING, BAKING, READY, OUT_FOR_DELIVERY, DELIVERED, CANCELED
+  subtotal        Float
+  deliveryFee     Float                @default(0.0)
+  discountAmount  Float                @default(0.0)
+  totalAmount     Float
+  paymentMethod   String               @default("PIX") // PIX, CREDIT_CARD, CASH
+  paymentStatus   String               @default("PENDING") // PENDING, PAID, FAILED, REFUNDED
+  paymentDetails  String? // JSON with txId, pixQrCode, cardLast4, etc.
+  deliveryAddress String // JSON or serialized address
+  notes           String?
+  estimatedTime   Int                  @default(40) // in minutes
+  courierId       String?
+  courier         User?                @relation("CourierDeliveries", fields: [courierId], references: [id])
+  items           OrderItem[]
+  statusHistory   OrderStatusHistory[]
+  deliveryTrack   DeliveryTracking?
+  review          Review?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+}
+
+model OrderItem {
+  id           String          @id @default(uuid())
+  orderId      String
+  order        Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String?
+  product      Product?        @relation(fields: [productId], references: [id])
+  variantId    String?
+  variant      ProductVariant? @relation(fields: [variantId], references: [id])
+  quantity     Int             @default(1)
+  unitPrice    Float
+  totalPrice   Float
+  customConfig String? // JSON: { isHalfHalf, secondProductId, crustType, doughType, addedToppings, removedToppings }
+  notes        String?
+}
+
+model OrderStatusHistory {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    String
+  note      String?
+  changedBy String?
+  createdAt DateTime @default(now())
+}
+
+model DeliveryTracking {
+  id         String   @id @default(uuid())
+  orderId    String   @unique
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  courierId  String
+  courier    User     @relation(fields: [courierId], references: [id])
+  currentLat Float
+  currentLng Float
+  speed      Float?   @default(0)
+  heading    Float?   @default(0)
+  status     String   @default("ACTIVE") // ACTIVE, FINISHED
+  updatedAt  DateTime @updatedAt
+}
+
+model Coupon {
+  id            String    @id @default(uuid())
+  code          String    @unique
+  discountType  String    @default("PERCENTAGE") // PERCENTAGE, FIXED
+  discountValue Float
+  minOrderValue Float     @default(0.0)
+  maxUses       Int       @default(100)
+  usedCount     Int       @default(0)
+  expiresAt     DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  rating    Int // 1 to 5
+  comment   String?
+  createdAt DateTime @default(now())
+}
