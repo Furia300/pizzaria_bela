@@ -10,6 +10,7 @@ import { KitchenDisplaySystem } from './components/kds/KitchenDisplaySystem';
 import { CourierDashboard } from './components/courier/CourierDashboard';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { DesignSystemPage } from './pages/DesignSystemPage';
+import { LiveChatWidget } from './components/chat/LiveChatWidget';
 import { Footer } from './components/Footer';
 import { useStore } from './store/useStore';
 
@@ -68,7 +69,7 @@ export function App() {
       {/* Footer */}
       {currentView === 'home' && <Footer />}
 
-      {/* Global Interactive Modals */}
+      {/* Global Interactive Modals & Live Chat */}
       <PizzaCustomizer />
       <CartDrawer onCheckout={() => setCheckoutOpen(true)} />
       <CheckoutModal
@@ -76,6 +77,7 @@ export function App() {
         onClose={() => setCheckoutOpen(false)}
         onOrderSuccess={handleOrderSuccess}
       />
+      <LiveChatWidget />
     </div>
   );
 }
