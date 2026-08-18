@@ -32,33 +32,41 @@ export function App() {
       {/* Top Navbar */}
       <Navbar currentView={currentView} onNavigate={(view) => setCurrentView(view)} />
 
-      {/* Main View Router */}
+      {/* Main View Portals */}
       <main className="flex-1">
-        {currentView === 'home' && (
-          <>
-            <CinematicHero />
-            <MenuSection />
-          </>
-        )}
+        <div className={currentView === 'home' ? 'block' : 'hidden'}>
+          <CinematicHero />
+          <MenuSection />
+        </div>
 
-        {currentView === 'tracking' && activeOrderId && (
-          <LiveOrderTracker
-            orderId={activeOrderId}
-            onBackToMenu={() => setCurrentView('home')}
-          />
-        )}
+        <div className={currentView === 'tracking' && activeOrderId ? 'block' : 'hidden'}>
+          {activeOrderId && (
+            <LiveOrderTracker
+              orderId={activeOrderId}
+              onBackToMenu={() => setCurrentView('home')}
+            />
+          )}
+        </div>
 
-        {currentView === 'kds' && <KitchenDisplaySystem />}
+        <div className={currentView === 'kds' ? 'block' : 'hidden'}>
+          <KitchenDisplaySystem />
+        </div>
 
-        {currentView === 'courier' && <CourierDashboard />}
+        <div className={currentView === 'courier' ? 'block' : 'hidden'}>
+          <CourierDashboard />
+        </div>
 
-        {currentView === 'admin' && <AdminDashboard />}
+        <div className={currentView === 'admin' ? 'block' : 'hidden'}>
+          <AdminDashboard />
+        </div>
 
-        {currentView === 'design-system' && <DesignSystemPage />}
+        <div className={currentView === 'design-system' ? 'block' : 'hidden'}>
+          <DesignSystemPage />
+        </div>
       </main>
 
-      {/* Footer (on home and design system views) */}
-      {(currentView === 'home' || currentView === 'design-system') && <Footer />}
+      {/* Footer */}
+      {currentView === 'home' && <Footer />}
 
       {/* Global Interactive Modals */}
       <PizzaCustomizer />

@@ -125,15 +125,13 @@ export const CinematicHero: React.FC = () => {
         stagger: 0.2
       });
 
-      // Cena 4: Pinned ScrollTrigger with multi-layer 3D Parallax
+      // Cena 4: Parallax ScrollTrigger without pin reparenting
       const scrollTl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=120%',
-          pin: true,
-          scrub: 1.2,
-          anticipatePin: 1
+          end: 'bottom top',
+          scrub: 1.2
         }
       });
 
@@ -141,17 +139,20 @@ export const CinematicHero: React.FC = () => {
       scrollTl.to('.hero-oven-bg', { scale: 1.15, filter: 'brightness(0.6)' }, 0);
 
       // Layer 2: Main pizza zoom & cinematic rotation
-      scrollTl.to(pizzaMainRef.current, { scale: 1.18, rotation: 12, y: -40 }, 0);
+      scrollTl.to(pizzaMainRef.current, { scale: 1.15, rotation: 10, y: -30 }, 0);
 
-      // Layer 3: Foreground flying tomatoes moving faster (depth effect)
-      scrollTl.to(tomatoesGroupRef.current, { y: -120, x: -30, scale: 1.1 }, 0);
-      scrollTl.to(herbsGroupRef.current, { y: -80, x: 40, rotation: 25 }, 0);
+      // Layer 3: Foreground flying toppings moving faster (depth effect)
+      scrollTl.to(tomatoesGroupRef.current, { y: -100, x: -20, scale: 1.1 }, 0);
+      scrollTl.to(herbsGroupRef.current, { y: -70, x: 30, rotation: 20 }, 0);
 
       // Fade out CTA into menu transition
-      scrollTl.to(heroContentRef.current, { opacity: 0.15, y: -60 }, 0.5);
+      scrollTl.to(heroContentRef.current, { opacity: 0.2, y: -40 }, 0.5);
     }, containerRef);
 
-    return () => ctx.revert();
+    return () => {
+      ctx.revert();
+      ScrollTrigger.getAll().forEach((t) => t.kill());
+    };
   }, []);
 
   // Subtle interactive mouse parallax
