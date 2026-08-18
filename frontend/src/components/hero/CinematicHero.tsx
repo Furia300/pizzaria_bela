@@ -3,6 +3,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Flame, Sparkles, ChefHat, ArrowDown, ShoppingBag } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import heroPizzaImg from '../../assets/hero-pizza.jpg';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -303,7 +304,7 @@ export const CinematicHero: React.FC = () => {
             }}
           >
             <img
-              src="/hero-pizza.jpg"
+              src={heroPizzaImg}
               alt="Pizza Artesanal Pizzeria Bella Notte saindo do forno a lenha com queijo derretido e fatias de tomate"
               className="w-full h-full object-cover rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-amber-900/30"
               loading="eager"

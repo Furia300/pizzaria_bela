@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Check, ChefHat, Plus, Minus, Sparkles, Layers, Info } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Ingredient, Product } from '../../types';
+import { INITIAL_INGREDIENTS, INITIAL_CATEGORIES } from '../../data/mockMenuData';
 
 interface GroupedIngredients {
   BASE: Ingredient[];
@@ -12,29 +13,33 @@ interface GroupedIngredients {
   CRUST: Ingredient[];
 }
 
+const defaultGrouped: GroupedIngredients = {
+  BASE: INITIAL_INGREDIENTS.filter((i) => i.category === 'BASE'),
+  SAUCE: INITIAL_INGREDIENTS.filter((i) => i.category === 'SAUCE'),
+  CHEESE: INITIAL_INGREDIENTS.filter((i) => i.category === 'CHEESE'),
+  PROTEIN: INITIAL_INGREDIENTS.filter((i) => i.category === 'PROTEIN'),
+  VEGGIE: INITIAL_INGREDIENTS.filter((i) => i.category === 'VEGGIE'),
+  CRUST: INITIAL_INGREDIENTS.filter((i) => i.category === 'CRUST')
+};
+
+const defaultPizzas = INITIAL_CATEGORIES.flatMap((c) => c.products);
+
 export const PizzaCustomizer: React.FC = () => {
   const { isCustomizerOpen, setCustomizerOpen, addItem } = useStore();
 
-  const [loading, setLoading] = useState(true);
-  const [ingredients, setIngredients] = useState<GroupedIngredients>({
-    BASE: [],
-    SAUCE: [],
-    CHEESE: [],
-    PROTEIN: [],
-    VEGGIE: [],
-    CRUST: []
-  });
-  const [availablePizzas, setAvailablePizzas] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [ingredients, setIngredients] = useState<GroupedIngredients>(defaultGrouped);
+  const [availablePizzas, setAvailablePizzas] = useState<Product[]>(defaultPizzas);
 
   // Selection states
   const [size, setSize] = useState<'P' | 'M' | 'G' | 'FAMILIA'>('M');
   const [isHalfHalf, setIsHalfHalf] = useState(false);
-  const [firstFlavor, setFirstFlavor] = useState<Product | null>(null);
-  const [secondFlavor, setSecondFlavor] = useState<Product | null>(null);
-  const [selectedBase, setSelectedBase] = useState<Ingredient | null>(null);
-  const [selectedCrust, setSelectedCrust] = useState<Ingredient | null>(null);
-  const [selectedSauce, setSelectedSauce] = useState<Ingredient | null>(null);
-  const [selectedCheese, setSelectedCheese] = useState<Ingredient | null>(null);
+  const [firstFlavor, setFirstFlavor] = useState<Product | null>(defaultPizzas[0] || null);
+  const [secondFlavor, setSecondFlavor] = useState<Product | null>(defaultPizzas[1] || defaultPizzas[0] || null);
+  const [selectedBase, setSelectedBase] = useState<Ingredient | null>(defaultGrouped.BASE[0] || null);
+  const [selectedCrust, setSelectedCrust] = useState<Ingredient | null>(defaultGrouped.CRUST[0] || null);
+  const [selectedSauce, setSelectedSauce] = useState<Ingredient | null>(defaultGrouped.SAUCE[0] || null);
+  const [selectedCheese, setSelectedCheese] = useState<Ingredient | null>(defaultGrouped.CHEESE[0] || null);
   const [extraToppings, setExtraToppings] = useState<Ingredient[]>([]);
   const [removedToppings, setRemovedToppings] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
@@ -58,11 +63,9 @@ export const PizzaCustomizer: React.FC = () => {
           setFirstFlavor(data.pizzasForHalfHalf[0]);
           setSecondFlavor(data.pizzasForHalfHalf[1] || data.pizzasForHalfHalf[0]);
         }
-        setLoading(false);
       })
       .catch((err) => {
-        console.error('Erro ao carregar ingredientes:', err);
-        setLoading(false);
+        // Fallback already initialized
       });
   }, [isCustomizerOpen]);
 

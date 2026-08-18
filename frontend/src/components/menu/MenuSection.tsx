@@ -4,16 +4,17 @@ import { Category, Product } from '../../types';
 import { ProductCard } from './ProductCard';
 import { ProductModal } from './ProductModal';
 import { useStore } from '../../store/useStore';
+import { INITIAL_CATEGORIES } from '../../data/mockMenuData';
 
 export const MenuSection: React.FC = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterVeg, setFilterVeg] = useState(false);
   const [filterSpicy, setFilterSpicy] = useState(false);
   const [filterChef, setFilterChef] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const { setCustomizerOpen } = useStore();
 
@@ -21,14 +22,12 @@ export const MenuSection: React.FC = () => {
     fetch('http://localhost:4000/api/menu')
       .then((res) => res.json())
       .then((data) => {
-        if (data.categories) {
+        if (data.categories && data.categories.length > 0) {
           setCategories(data.categories);
         }
-        setLoading(false);
       })
       .catch((err) => {
-        console.error('Erro ao carregar cardápio:', err);
-        setLoading(false);
+        // Fallback already initialized with rich categories & photos
       });
   }, []);
 
