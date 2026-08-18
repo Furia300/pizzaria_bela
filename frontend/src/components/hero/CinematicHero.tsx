@@ -46,103 +46,71 @@ export const CinematicHero: React.FC = () => {
         'start'
       );
 
-      // Cena 1 (0-1s): Dough & Pizza base elastic reveal
+      // Cena 1 (0-0.6s): Dough stretching opening
       masterTl.fromTo(
         pizzaMainRef.current,
-        { scale: 0.2, opacity: 0, rotation: -25 },
+        { scale: 0.6, opacity: 0, rotation: -15 },
         {
           scale: 1,
           opacity: 1,
           rotation: 0,
-          duration: 1.4,
-          ease: 'elastic.out(1, 0.45)'
+          duration: 0.8,
+          ease: 'back.out(1.4)'
+        },
+        'start'
+      );
+
+      // Cena 2 (0.2-0.8s): Flying toppings cascade into place
+      masterTl.fromTo(
+        '.flying-tomato',
+        { y: -100, scale: 0.3, opacity: 0, rotateZ: () => gsap.utils.random(-60, 60) },
+        {
+          y: 0,
+          scale: 1,
+          opacity: 1,
+          rotateZ: 0,
+          duration: 0.7,
+          stagger: 0.08,
+          ease: 'power3.out'
         },
         'start+=0.2'
       );
 
-      // Cena 2 (1-2.2s): Stretched melted cheese pull down & glow
       masterTl.fromTo(
-        cheeseLayerRef.current,
-        { scaleY: 0, opacity: 0, transformOrigin: 'top center' },
+        '.flying-herb',
+        { y: -60, scale: 0.2, opacity: 0, rotateZ: () => gsap.utils.random(-90, 90) },
         {
-          scaleY: 1,
+          y: 0,
+          scale: 1,
           opacity: 1,
-          duration: 1.1,
-          ease: 'back.out(1.7)'
+          rotateZ: 0,
+          duration: 0.6,
+          stagger: 0.05,
+          ease: 'power2.out'
         },
-        'start+=0.8'
+        'start+=0.3'
       );
 
-      // Cascading flying tomatoes with random rotation & bounce
-      const tomatoes = tomatoesGroupRef.current?.querySelectorAll('.flying-tomato');
-      if (tomatoes && tomatoes.length > 0) {
-        masterTl.fromTo(
-          tomatoes,
-          {
-            y: -140,
-            x: () => gsap.utils.random(-80, 80),
-            opacity: 0,
-            scale: 0.4,
-            rotation: () => gsap.utils.random(-60, 60)
-          },
-          {
-            y: 0,
-            x: 0,
-            opacity: 1,
-            scale: 1,
-            rotation: 0,
-            stagger: 0.12,
-            duration: 1.2,
-            ease: 'bounce.out'
-          },
-          'start+=0.9'
-        );
-      }
-
-      // Flying aromatic oregano and basil leaves
-      const herbs = herbsGroupRef.current?.querySelectorAll('.flying-herb');
-      if (herbs && herbs.length > 0) {
-        masterTl.fromTo(
-          herbs,
-          {
-            y: -90,
-            x: () => gsap.utils.random(-100, 100),
-            opacity: 0,
-            rotation: () => gsap.utils.random(-180, 180)
-          },
-          {
-            y: 0,
-            x: 0,
-            opacity: 1,
-            rotation: () => gsap.utils.random(-15, 15),
-            stagger: 0.08,
-            duration: 1.4,
-            ease: 'power2.out'
-          },
-          'start+=1.1'
-        );
-      }
-
-      // Cena 3 (2.2-3.5s): Title reveal with stagger letters/words
+      // Cena 3 (0.3-0.8s): Title & CTAs reveal
       masterTl.fromTo(
         '.title-word',
-        { y: 50, opacity: 0, rotateX: -45 },
+        { y: 30, opacity: 0, rotateX: -20 },
         {
           y: 0,
           opacity: 1,
           rotateX: 0,
-          stagger: 0.15,
-          duration: 0.9,
-          ease: 'power4.out'
+          stagger: 0.08,
+          duration: 0.6,
+          ease: 'power3.out'
         },
-        'start+=1.4'
+        'start+=0.2'
       );
 
       masterTl.fromTo(
         ctaGroupRef.current,
-        { y: 30, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, ease: 'power2.out' },
-        'start+=2.0'
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out' },
+        'start+=0.4'
       );
 
       // Continuous floating physics for toppings
