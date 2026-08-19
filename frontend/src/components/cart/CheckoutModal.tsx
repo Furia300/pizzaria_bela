@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, MapPin, CreditCard, QrCode, Banknote, ShieldCheck, CheckCircle2, Copy, Check } from 'lucide-react';
+import { X, MapPin, CreditCard, QrCode, Banknote, ShieldCheck, CheckCircle2, Copy, Check, Sparkles } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import confetti from 'canvas-confetti';
 
@@ -20,9 +20,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
     user
   } = useStore();
 
-  const [name, setName] = useState(user?.name || '');
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [email, setEmail] = useState(user?.email || '');
+  const [name, setName] = useState(user?.name || 'Diogo Oliveira');
+  const [phone, setPhone] = useState(user?.phone || '(11) 98765-4321');
+  const [email, setEmail] = useState(user?.email || 'diogo@bellanotte.com.br');
   
   const [street, setStreet] = useState('Avenida Paulista');
   const [number, setNumber] = useState('1578');
@@ -38,7 +38,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
   const [cardHolder, setCardHolder] = useState('DIOGO OLIVEIRA');
   const [expiryDate, setExpiryDate] = useState('12/28');
   const [cvv, setCvv] = useState('888');
-  const [installments, setInstallments] = useState(1);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -49,7 +48,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
 
   if (!isOpen) return null;
 
-  const subtotal = getSubtotal();
   const total = getTotal();
 
   const handleCopyPix = () => {
@@ -64,6 +62,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    const randomOrderNum = Math.floor(1050 + Math.random() * 900);
+    const mockOrderId = `ped-${randomOrderNum}`;
 
     try {
       const orderPayload = {
@@ -91,46 +92,56 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
         },
         deliveryFee,
         couponCode: appliedCoupon?.code,
-        paymentMethod,
-        cardData:
-          paymentMethod === 'CREDIT_CARD'
-            ? {
-                cardNumber,
-                cardHolder,
-                expiryDate,
-                cvv,
-                installments
-              }
-            : undefined
+        paymentMethod
       };
 
-      const res = await fetch('http://localhost:4000/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderPayload)
-      });
+      // Try calling local backend API if available
+      try {
+        const res = await fetch('http://localhost:4000/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderPayload)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (paymentMethod === 'PIX' && data.payment) {
+            setPixData({
+              txId: data.payment.txId,
+              qrCodeCopyPaste: data.payment.qrCodeCopyPaste,
+              orderId: data.order.id
+            });
+            clearCart();
+            confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+            setLoading(false);
+            return;
+          } else {
+            clearCart();
+            confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 } });
+            onClose();
+            onOrderSuccess(data.order.id);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {}
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Erro ao processar pedido.');
-      }
-
-      // If PIX, show QR Code step
-      if (paymentMethod === 'PIX' && data.payment) {
+      // Fallback for GitHub Pages static hosting
+      if (paymentMethod === 'PIX') {
+        const pixPayloadStr = `00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-4266141740005204000053039865405${total.toFixed(
+          2
+        )}5802BR5925PIZZERIA BELLA NOTTE6009SAO PAULO62070503***6304`;
         setPixData({
-          txId: data.payment.txId,
-          qrCodeCopyPaste: data.payment.qrCodeCopyPaste,
-          orderId: data.order.id
+          txId: `tx-${Date.now()}`,
+          qrCodeCopyPaste: pixPayloadStr,
+          orderId: mockOrderId
         });
         clearCart();
-        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+        confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
       } else {
-        // Immediate completion for Card/Cash
         clearCart();
-        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+        confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
         onClose();
-        onOrderSuccess(data.order.id);
+        onOrderSuccess(mockOrderId);
       }
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro ao enviar seu pedido.');
@@ -139,42 +150,31 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
     }
   };
 
-  const handleConfirmPixPaid = async () => {
+  const handleConfirmPixPaid = () => {
     if (!pixData?.orderId) return;
-    setLoading(true);
-    try {
-      await fetch(`http://localhost:4000/api/orders/${pixData.orderId}/confirm-pix`, {
-        method: 'POST'
-      });
-      onClose();
-      onOrderSuccess(pixData.orderId);
-    } catch (err) {
-      console.error(err);
-      onClose();
-      onOrderSuccess(pixData.orderId);
-    } finally {
-      setLoading(false);
-    }
+    confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
+    onClose();
+    onOrderSuccess(pixData.orderId);
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
-      <div className="relative w-full max-w-2xl bg-wood-900 border border-stone-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl bg-wood-900 border border-stone-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         
         {/* Header */}
         <div className="px-6 py-4 bg-wood-850 border-b border-stone-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-tomato-900/50 border border-tomato-500/40 text-tomato-400">
+            <div className="p-2.5 rounded-2xl bg-tomato-900/50 border border-tomato-500/40 text-tomato-400 shadow-glow-tomato">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-xl font-serif font-bold text-white">Finalização do Pedido</h2>
-              <p className="text-xs text-stone-400">Entrega rápida & Pagamento seguro</p>
+              <p className="text-xs text-stone-400">Entrega rápida & Pagamento seguro com PIX ou Cartão</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition-colors"
+            className="p-2 rounded-xl text-stone-400 hover:text-white hover:bg-stone-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -198,7 +198,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
               </div>
 
               {/* QR Code Graphic Display */}
-              <div className="p-4 bg-white rounded-2xl inline-block shadow-2xl mx-auto">
+              <div className="p-4 bg-white rounded-3xl inline-block shadow-2xl mx-auto border-4 border-amber-400/40">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
                     pixData.qrCodeCopyPaste
@@ -210,14 +210,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
 
               {/* Copy & Paste Code */}
               <div className="max-w-md mx-auto space-y-2">
-                <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 text-[11px] text-stone-400 break-all font-mono select-all">
+                <div className="p-3 rounded-2xl bg-stone-950 border border-stone-800 text-[11px] text-stone-400 break-all font-mono select-all">
                   {pixData.qrCodeCopyPaste}
                 </div>
 
                 <button
                   type="button"
                   onClick={handleCopyPix}
-                  className="w-full py-2.5 px-4 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-400 text-xs font-bold transition-all flex items-center justify-center gap-2 border border-stone-700"
+                  className="w-full py-2.5 px-4 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-400 text-xs font-bold transition-all flex items-center justify-center gap-2 border border-stone-700 shadow-md"
                 >
                   {copiedPix ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                   <span>{copiedPix ? 'Código Copiado com Sucesso!' : 'Copiar Código PIX (Copia e Cola)'}</span>
@@ -229,10 +229,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
                   type="button"
                   onClick={handleConfirmPixPaid}
                   disabled={loading}
-                  className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-sm shadow-glow-gold transition-all flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 className="w-5 h-5" />
-                  <span>Já realizei o pagamento PIX → Acompanhar Pedido</span>
+                  <span>Já realizei o pagamento PIX → Acompanhar Pedido ao Vivo</span>
                 </button>
               </div>
             </div>
@@ -356,46 +356,46 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('PIX')}
-                    className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                    className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
                       paymentMethod === 'PIX'
-                        ? 'border-emerald-500 bg-emerald-950/40 text-emerald-300 font-bold shadow-glow-gold'
+                        ? 'border-emerald-500 bg-emerald-950/50 text-emerald-300 font-bold shadow-glow-gold'
                         : 'border-stone-800 bg-stone-900/60 text-stone-400 hover:border-stone-700'
                     }`}
                   >
-                    <QrCode className="w-5 h-5" />
+                    <QrCode className="w-5 h-5 text-emerald-400" />
                     <span className="text-xs">PIX Instantâneo</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('CREDIT_CARD')}
-                    className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                    className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
                       paymentMethod === 'CREDIT_CARD'
                         ? 'border-amber-500 bg-amber-500/20 text-amber-300 font-bold shadow-glow-gold'
                         : 'border-stone-800 bg-stone-900/60 text-stone-400 hover:border-stone-700'
                     }`}
                   >
-                    <CreditCard className="w-5 h-5" />
+                    <CreditCard className="w-5 h-5 text-amber-400" />
                     <span className="text-xs">Cartão de Crédito</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('CASH')}
-                    className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                    className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
                       paymentMethod === 'CASH'
                         ? 'border-amber-500 bg-amber-500/20 text-amber-300 font-bold shadow-glow-gold'
                         : 'border-stone-800 bg-stone-900/60 text-stone-400 hover:border-stone-700'
                     }`}
                   >
-                    <Banknote className="w-5 h-5" />
+                    <Banknote className="w-5 h-5 text-amber-400" />
                     <span className="text-xs">Dinheiro na Entrega</span>
                   </button>
                 </div>
 
                 {/* Credit Card Fields */}
                 {paymentMethod === 'CREDIT_CARD' && (
-                  <div className="p-4 bg-wood-950/70 border border-stone-800 rounded-xl space-y-3">
+                  <div className="p-4 bg-wood-950/70 border border-stone-800 rounded-2xl space-y-3 animate-in fade-in duration-200">
                     <div>
                       <label className="text-[11px] text-stone-400 block mb-1">Número do Cartão:</label>
                       <input
@@ -471,7 +471,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
               type="submit"
               form="checkout-form"
               disabled={loading}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-tomato-700 to-tomato-600 hover:from-tomato-600 hover:to-tomato-500 active:scale-95 text-white font-bold text-sm shadow-glow-tomato transition-all flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-tomato-700 to-tomato-600 hover:from-tomato-600 hover:to-tomato-500 active:scale-95 text-white font-bold text-sm shadow-glow-tomato transition-all flex items-center justify-center gap-2"
             >
               {loading ? (
                 <span>Processando...</span>
