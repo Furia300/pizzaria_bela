@@ -203,9 +203,15 @@ export const CourierDashboard: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {activeDeliveries.map((order) => {
-              const address = typeof order.deliveryAddress === 'string'
-                ? JSON.parse(order.deliveryAddress)
-                : order.deliveryAddress;
+              let streetText = order.deliveryAddress;
+              let detailsText = '';
+              try {
+                if (typeof order.deliveryAddress === 'string' && order.deliveryAddress.startsWith('{')) {
+                  const parsed = JSON.parse(order.deliveryAddress);
+                  streetText = `${parsed.street || ''}, ${parsed.number || ''} ${parsed.complement ? `(${parsed.complement})` : ''}`;
+                  detailsText = `${parsed.neighborhood || ''}, ${parsed.city || ''}`;
+                }
+              } catch {}
               const isSelected = selectedOrder?.id === order.id;
 
               return (
@@ -231,12 +237,8 @@ export const CourierDashboard: React.FC = () => {
                     <div className="flex items-start gap-2">
                       <MapPin className="w-4 h-4 text-tomato-500 shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-bold text-white">
-                          {address.street}, {address.number} {address.complement ? `(${address.complement})` : ''}
-                        </p>
-                        <p className="text-stone-400">
-                          {address.neighborhood}, {address.city} - {address.zipCode}
-                        </p>
+                        <p className="font-bold text-white">{streetText}</p>
+                        {detailsText && <p className="text-stone-400">{detailsText}</p>}
                       </div>
                     </div>
 
